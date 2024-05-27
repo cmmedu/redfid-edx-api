@@ -21,7 +21,6 @@ class CreateRedfidUser(View):
         from social_django.models import UserSocialAuth
 
         try:
-            print(request)
             logger.info("CreateRedfidUser - request: {}".format(request))
             data = json.loads(request.body)
             username = data.get('username')
