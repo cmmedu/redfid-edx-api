@@ -16,7 +16,7 @@ services:
   lms:
     image: ghcr.io/eol-uchile/edx-platform:testing-lilac
     volumes:
-      - ../:/openedx/requirements/redfid-edx-user-manager
+      - ../:/openedx/requirements/redfid-edx-api
     depends_on:
       - memcached
       - mongodb

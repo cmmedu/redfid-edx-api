@@ -3,6 +3,7 @@
 
 from django.conf import settings
 from django.contrib.auth import logout
+from django.db.utils import IntegrityError
 from django.http import HttpResponseRedirect, HttpResponseForbidden, Http404, HttpResponseBadRequest, HttpResponse
 from django.views.generic.base import View
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
@@ -33,13 +34,22 @@ class CreateRedfidUser(View):
             last_name = data.get('last_name')
             if not username or not password or not email or not first_name or not last_name:
                 return HttpResponseBadRequest("Missing required fields")
-            new_user = User.objects.create_user(username, email, password, first_name=first_name, last_name=last_name)
-            new_user.save()
+            try:
+                new_user = User.objects.create_user(username, email, password, first_name=first_name, last_name=last_name)
+                new_user.save()
+            except IntegrityError:
+                return HttpResponseBadRequest("User already exists")
             full_name = first_name + " " + last_name
-            new_userprofile = UserProfile.objects.create(user=new_user, name=full_name)
-            new_userprofile.save()
-            new_usersocialauth = UserSocialAuth.objects.create(user=new_user, provider='tpa-saml', uid="default:" + username, extra_data='{}')
-            new_usersocialauth.save()
+            try:
+                new_userprofile = UserProfile.objects.create(user=new_user, name=full_name)
+                new_userprofile.save()
+            except IntegrityError:
+                return HttpResponseBadRequest("UserProfile already exists") # should never happen
+            try:
+                new_usersocialauth = UserSocialAuth.objects.create(user=new_user, provider='tpa-saml', uid="default:" + username, extra_data={})
+                new_usersocialauth.save()
+            except IntegrityError:
+                return HttpResponseBadRequest("UserSocialAuth already exists") # should never happen
             return HttpResponse(f"User {username} created successfully")
         except json.JSONDecodeError:
             return HttpResponseBadRequest("Invalid JSON data")
@@ -73,7 +83,7 @@ class EditRedfidUser(View):
             user.save()
             userprofile = UserProfile.objects.get(user=user)
             if not userprofile:
-                return HttpResponseBadRequest("UserProfile not found")
+                return HttpResponseBadRequest("UserProfile not found") # should never happen
             full_name = first_name + " " + last_name
             userprofile.name = full_name
             userprofile.save()
@@ -155,6 +165,10 @@ class GetIAAUserData(View):
         """
         Endpoint usado por el panel de administración de RedFID para obtener los datos de un usuario en el IAAXBlock.
         """
+        try:
+            from iaaxblock.models import IAAActivity, IAAStage, IAASubmission
+        except ImportError:
+            return HttpResponseBadRequest("IAAXBlock not found")
         pass
 
 
@@ -164,6 +178,10 @@ class GetIAACourseData(View):
         """
         Endpoint usado por el panel de administración de RedFID para obtener los datos de un curso en el IAAXBlock.
         """
+        try:
+            from iaaxblock.models import IAAActivity, IAAStage, IAASubmission
+        except ImportError:
+            return HttpResponseBadRequest("IAAXBlock not found")
         pass
 
 
@@ -173,6 +191,10 @@ class GetIterativeXBlockUserData(View):
         """
         Endpoint usado por el panel de administración de RedFID para obtener los datos de un usuario en el IterativeXBlock.
         """
+        try:
+            from iterativexblock.models import IterativeXBlockQuestion, IterativeXBlockAnswer
+        except ImportError:
+            return HttpResponseBadRequest("IterativeXBlock not found")
         pass
 
 
@@ -182,6 +204,10 @@ class GetIterativeXBlockCourseData(View):
         """
         Endpoint usado por el panel de administración de RedFID para obtener los datos de un curso en el IterativeXBlock.
         """
+        try:
+            from iterativexblock.models import IterativeXBlockQuestion, IterativeXBlockAnswer
+        except ImportError:
+            return HttpResponseBadRequest("IterativeXBlock not found")
         pass
         
 

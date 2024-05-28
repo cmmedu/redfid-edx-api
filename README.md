@@ -1,4 +1,4 @@
-# RedFID edX User Manager
+# RedFID edX API
 
 # Install App
 
