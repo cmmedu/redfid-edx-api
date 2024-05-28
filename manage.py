@@ -5,7 +5,7 @@ import sys
 if __name__ == "__main__":
     os.environ.setdefault(
         "DJANGO_SETTINGS_MODULE",
-        "redfid_edx_user_manager_test.settings")
+        "redfid_edx_api_test.settings")
     try:
         from django.core.management import execute_from_command_line
     except ImportError:

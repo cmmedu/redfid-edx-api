@@ -1,9 +1,9 @@
 import setuptools
 
 setuptools.setup(
-    name="redfid_edx_user_manager",
+    name="redfid_edx_api",
     version="0.0.1",
-    author="Vicente Daie",
+    author="Vicente Daie Pinilla",
     author_email="vdaiep@gmail.com",
     description=".",
     url="https://www.redfid.cl",
@@ -14,7 +14,7 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     entry_points={
-        "lms.djangoapp": ["redfid_edx_user_manager = redfid_edx_user_manager.apps:RedfidEdxUserManager"],
-        "cms.djangoapp": ["redfid_edx_user_manager = redfid_edx_user_manager.apps:RedfidEdxUserManager"]
+        "lms.djangoapp": ["redfid_edx_api = redfid_edx_api.apps:RedfidEdxApi"],
+        "cms.djangoapp": ["redfid_edx_api = redfid_edx_api.apps:RedfidEdxApi"]
     },
 )

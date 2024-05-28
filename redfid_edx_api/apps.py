@@ -7,13 +7,13 @@ from openedx.core.djangoapps.plugins.constants import (
 )
 
 
-class RedfidEdxUserManager(AppConfig):
-    name = 'redfid_edx_user_manager'
+class RedfidEdxApi(AppConfig):
+    name = 'redfid_edx_api'
     plugin_app = {
         PluginURLs.CONFIG: {
             ProjectType.LMS: {
-                PluginURLs.NAMESPACE: "redfid_edx_user_manager",
-                PluginURLs.REGEX: r"^redfid_edx_user_manager/",
+                PluginURLs.NAMESPACE: "redfid_edx_api",
+                PluginURLs.REGEX: r"^redfid_edx_api/",
                 PluginURLs.RELATIVE_PATH: "urls",
             }},
         PluginSettings.CONFIG: {

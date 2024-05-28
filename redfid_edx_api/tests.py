@@ -29,7 +29,7 @@ class TestRedfidLogoutGet(TestCase):
             self.client.login(username='testuser1', password='12345')
 
     def test_logout_get(self):
-        result = self.client.get(reverse('redfid_edx_user_manager:logout_get'))
+        result = self.client.get(reverse('redfid_edx_api:logout_get'))
         self.assertEqual(result.status_code, 302)
         
         request = urllib.parse.urlparse(result.url)
@@ -40,7 +40,7 @@ class TestRedfidLogoutGet(TestCase):
         self.assertEqual(args['action'][0], "logout")
 
     def test_logout_post(self):
-        result = self.client.post(reverse('redfid_edx_user_manager:logout_get'))
+        result = self.client.post(reverse('redfid_edx_api:logout_get'))
         self.assertEqual(result.status_code, 405)
 
 class TestRedfidLogoutPost(TestCase):
@@ -55,11 +55,11 @@ class TestRedfidLogoutPost(TestCase):
             self.client.login(username='testuser1', password='12345')
 
     def test_logout_get(self):
-        result = self.client.get(reverse('redfid_edx_user_manager:logout_post'))
+        result = self.client.get(reverse('redfid_edx_api:logout_post'))
         self.assertEqual(result.status_code, 405)
 
     def test_logout_post(self):
-        result = self.client.post(reverse('redfid_edx_user_manager:logout_post'))
+        result = self.client.post(reverse('redfid_edx_api:logout_post'))
         self.assertEqual(result.status_code, 302)
         
         request = urllib.parse.urlparse(result.url)
