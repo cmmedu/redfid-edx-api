@@ -4,7 +4,7 @@
 from django.conf import settings
 from django.contrib.auth import logout
 from django.db.utils import IntegrityError
-from django.http import HttpResponseRedirect, HttpResponseForbidden, Http404, HttpResponseBadRequest, HttpResponse
+from django.http import HttpResponseRedirect, HttpResponseForbidden, Http404, HttpResponseBadRequest, HttpResponse, JsonResponse
 from django.views.generic.base import View
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 import json
@@ -161,7 +161,7 @@ class RedfidLogoutPost(View):
 
 class GetIAAUserData(View):
     
-    def post():
+    def post(self, request):
         """
         Endpoint usado por el panel de administración de RedFID para obtener los datos de un usuario en el IAAXBlock.
         """
@@ -174,7 +174,7 @@ class GetIAAUserData(View):
 
 class GetIAACourseData(View):
         
-    def post():
+    def post(self, request):
         """
         Endpoint usado por el panel de administración de RedFID para obtener los datos de un curso en el IAAXBlock.
         """
@@ -187,38 +187,76 @@ class GetIAACourseData(View):
 
 class GetIterativeXBlockUserData(View):
     
-    def post():
+    def post(self, request):
         """
         Endpoint usado por el panel de administración de RedFID para obtener los datos de un usuario en el IterativeXBlock.
         """
+        from django.contrib.auth.models import User
         try:
             from iterativexblock.models import IterativeXBlockQuestion, IterativeXBlockAnswer
         except ImportError:
             return HttpResponseBadRequest("IterativeXBlock not found")
-        pass
+        data = json.loads(request.body)
+        username = data.get('username')
+        if not username:
+            return HttpResponseBadRequest("Missing username")
+        user = User.objects.get(username=username)
+        if not user:
+            return HttpResponseBadRequest("User not found")
+        questions = IterativeXBlockQuestion.objects.filter().all()
+        out = []
+        for question in questions:
+            answer = IterativeXBlockAnswer.objects.filter(id_student=user.id, question_id=question.id).first()
+            q = {
+                "id_xblock": question.id_xblock,
+                "id_course": question.id_course,
+                "id_question": question.id_question,
+                "answer": answer.answer if answer else None,
+                "timestamp": str(answer.timestamp) if answer else None
+            }
+            out.append(q)
+        return JsonResponse(out, safe=False)
 
 
 class GetIterativeXBlockCourseData(View):
     
-    def post():
+    def post(self, request):
         """
         Endpoint usado por el panel de administración de RedFID para obtener los datos de un curso en el IterativeXBlock.
         """
+        from django.contrib.auth.models import User
         try:
             from iterativexblock.models import IterativeXBlockQuestion, IterativeXBlockAnswer
         except ImportError:
             return HttpResponseBadRequest("IterativeXBlock not found")
-        pass
-        
-
-# para encuestas y otros indicadores (como consentimiento informado, etc)
-class GetDataXBlockStudentAnswer(View):
-    pass
-
+        data = json.loads(request.body)
+        course_id = data.get('course_id')
+        if not course_id:
+            return HttpResponseBadRequest("Missing course_id")
+        questions = IterativeXBlockQuestion.objects.filter(id_course=course_id).all()
+        answers = IterativeXBlockAnswer.objects.filter(id_course=course_id).all()
+        out = []
+        for question in questions:
+            q = {
+                "id_xblock": question.id_xblock,
+                "id_question": question.id_question,
+                "answers": []
+            }
+            for answer in answers:
+                if answer.question_id == question.id:
+                    username = User.objects.get(id=answer.id_student).username
+                    q['answers'].append({
+                        "username": username,
+                        "answer": answer.answer,
+                        "timestamp": str(answer.timestamp)
+                    })
+            out.append(q)
+        return JsonResponse(out, safe=False)
+            
 
 class GetUserCertificates(View):
 
-    def post():
+    def post(self, request):
         """
         Endpoint usado por el panel de administración de RedFID para obtener los certificados de un usuario.
         """
@@ -227,9 +265,17 @@ class GetUserCertificates(View):
 
 class GetCourseCertificates(View):
 
-    def post():
+    def post(self, request):
         """
         Endpoint usado por el panel de administración de RedFID para obtener los certificados de un curso.
         """
         pass
     
+
+class GetC3UserData(View):
+    pass
+
+
+class GetC3CourseData(View):
+    pass
+
