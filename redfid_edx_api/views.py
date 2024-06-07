@@ -322,10 +322,52 @@ class GetCourseCertificates(View):
         pass
     
 
-class GetC3UserData(View):
-    pass
+class GetXBlockUserData(View):
+    
+    def post(self, request):
+        """
+        Endpoint usado por el panel de administración de RedFID para obtener los certificados de un curso.
+        """
+        from django.contrib.auth.models import User
+        from lms.djangoapps.courseware.models import StudentModule
+        data = json.loads(request.body)
+        username = data.get('username')
+        id_xblock = data.get('id_xblock')
+        xblock_type = data.get('xblock_type')
+        course_id = data.get('course_id')
+        if not username:
+            return HttpResponseBadRequest("Missing username")
+        if not id_xblock:
+            return HttpResponseBadRequest("Missing id_xblock")
+        if not course_id:
+            return HttpResponseBadRequest("Missing course_id")
+        if not xblock_type:
+            return HttpResponseBadRequest("Missing xblock_type")
+        if xblock_type not in ['iterativexblock', 'freetextresponse']:
+            return HttpResponseBadRequest("Invalid xblock_type")
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return HttpResponseBadRequest("User not found")
+        try:
+            module_state_key = "block-v1:{}+type@{}+block@{}".format(course_id.split("course-v1:")[1], xblock_type, id_xblock)
+            student_module = StudentModule.objects.get(student=user, module_state_key=module_state_key)
+            if xblock_type == 'freetextresponse':
+                out = {
+                    "answer": json.loads(student_module.state)['student_answer']
+                }
+            elif xblock_type == 'iterativexblock':
+                out = {
+                    "answer": json.loads(student_module.state)['student_answers']
+                }
+            else:
+                out = {
+                    "answer": None
+                }
+        except StudentModule.DoesNotExist:
+            out = {
+                "answer": None
+            }
+        return JsonResponse(out, safe=False)
 
-
-class GetC3CourseData(View):
-    pass
 

@@ -17,6 +17,5 @@ urlpatterns = [
     url('get_iterativexblock_course_data/', csrf_exempt(GetIterativeXBlockCourseData.as_view()), name='get_iterative_course_data'),
     url('get_user_certificates/', csrf_exempt(GetUserCertificates.as_view()), name='get_user_certificates'),
     url('get_course_certificates/', csrf_exempt(GetCourseCertificates.as_view()), name='get_course_certificates'),
-    url('get_c3_user_data/', csrf_exempt(GetC3UserData.as_view()), name='get_c3_user_data'),
-    url('get_c3_course_data/', csrf_exempt(GetC3CourseData.as_view()), name='get_c3_course_data'),
+    url('get_xblock_user_data/', csrf_exempt(GetXBlockUserData.as_view()), name='get_c3_user_data'),
 ]
