@@ -165,11 +165,34 @@ class GetIAAUserData(View):
         """
         Endpoint usado por el panel de administración de RedFID para obtener los datos de un usuario en el IAAXBlock.
         """
+        from django.contrib.auth.models import User
         try:
             from iaaxblock.models import IAAActivity, IAAStage, IAASubmission
         except ImportError:
             return HttpResponseBadRequest("IAAXBlock not found")
-        pass
+        data = json.loads(request.body)
+        username = data.get('username')
+        if not username:
+            return HttpResponseBadRequest("Missing username")
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return HttpResponseBadRequest("User not found")
+        activities = IAAActivity.objects.filter().all()
+        stages = IAAStage.objects.filter().all()
+        out = []
+        for activity in activities:
+            out.append({
+                "id_course": activity.id_course,
+                "name": activity.activity_name,
+                "stages": [{
+                    "label": stage.stage_label,
+                    "number": stage.stage_number,
+                    "answer": IAASubmission.objects.get(id_student=user.id, stage=stage).submission if IAASubmission.objects.filter(id_student=user.id, stage=stage).exists() else None,
+                    "timestamp": str(IAASubmission.objects.get(id_student=user.id, stage=stage).submission_time) if IAASubmission.objects.filter(id_student=user.id, stage=stage).exists() else None
+                } for stage in stages if stage.activity == activity]
+            })
+        return JsonResponse(out, safe=False)
 
 
 class GetIAACourseData(View):
@@ -178,11 +201,34 @@ class GetIAACourseData(View):
         """
         Endpoint usado por el panel de administración de RedFID para obtener los datos de un curso en el IAAXBlock.
         """
+        from django.contrib.auth.models import User
         try:
             from iaaxblock.models import IAAActivity, IAAStage, IAASubmission
         except ImportError:
             return HttpResponseBadRequest("IAAXBlock not found")
-        pass
+        data = json.loads(request.body)
+        course_id = data.get('course_id')
+        if not course_id:
+            return HttpResponseBadRequest("Missing course_id")
+        activities = IAAActivity.objects.filter(id_course=course_id).all()
+        stages = IAAStage.objects.filter(activity__in=activities).all()
+        out = []
+        for activity in activities:
+            out.append({
+                "id_course": activity.id_course,
+                "name": activity.activity_name,
+                "stages": [{
+                    "label": stage.stage_label,
+                    "number": stage.stage_number,
+                    "answers": [{
+                        "user": User.objects.get(id=submission.id_student).username if User.objects.filter(id=submission.id_student).exists() else None,
+                        "username": User.objects.get(id=submission.id_student).username,
+                        "answer": submission.submission,
+                        "timestamp": str(submission.submission_time)
+                    } for submission in IAASubmission.objects.filter(stage=stage).all()]
+                } for stage in stages if stage.activity == activity]
+            })
+        return JsonResponse(out, safe=False)
 
 
 class GetIterativeXBlockUserData(View):
@@ -200,8 +246,9 @@ class GetIterativeXBlockUserData(View):
         username = data.get('username')
         if not username:
             return HttpResponseBadRequest("Missing username")
-        user = User.objects.get(username=username)
-        if not user:
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
             return HttpResponseBadRequest("User not found")
         questions = IterativeXBlockQuestion.objects.filter().all()
         out = []
@@ -244,7 +291,10 @@ class GetIterativeXBlockCourseData(View):
             }
             for answer in answers:
                 if answer.question_id == question.id:
-                    username = User.objects.get(id=answer.id_student).username
+                    try:
+                        username = User.objects.get(id=answer.id_student).username
+                    except User.DoesNotExist:
+                        username = None
                     q['answers'].append({
                         "username": username,
                         "answer": answer.answer,
