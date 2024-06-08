@@ -34,6 +34,8 @@ class CreateRedfidUser(View):
             last_name = data.get('last_name')
             if not username or not password or not email or not first_name or not last_name:
                 return HttpResponseBadRequest("Missing required fields")
+            if username in settings.FORBIDDEN_USERNAMES:
+                return HttpResponseBadRequest("Username is forbidden")
             try:
                 new_user = User.objects.create_user(username, email, password, first_name=first_name, last_name=last_name)
                 new_user.save()
@@ -131,10 +133,19 @@ class DeleteRedfidUser(View):
         """
 
         from django.contrib.auth.models import User
-        from common.djangoapps.student.models import UserProfile
 
-        # se puede? consultar con thomas
-        return HttpResponseForbidden("Forbidden")
+        try:
+            data = json.loads(request.body)
+            username = data.get('username')
+            if not username:
+                return HttpResponseBadRequest("Missing username")
+            user = User.objects.get(username=username)
+            if not user:
+                return HttpResponseBadRequest("User not found")
+            user.delete()
+            return HttpResponse(f"User {username} deleted successfully")
+        except json.JSONDecodeError:
+            return HttpResponseBadRequest("Invalid JSON data")
     
 
 class RedfidLogoutGet(View):
