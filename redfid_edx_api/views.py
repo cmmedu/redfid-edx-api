@@ -4,7 +4,7 @@
 from django.conf import settings
 from django.contrib.auth import logout
 from django.db.utils import IntegrityError
-from django.http import HttpResponseRedirect, HttpResponseForbidden, Http404, HttpResponseBadRequest, HttpResponse, JsonResponse
+from django.http import HttpResponseRedirect, HttpResponseBadRequest, HttpResponse, JsonResponse
 from django.views.generic.base import View
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 import json
@@ -383,5 +383,23 @@ class GetXBlockUserData(View):
                 "answer": None
             }
         return JsonResponse(out, safe=False)
+
+
+class EnrollUserIntoCourse(View):
+
+    def post(self, request):
+        """
+        Endpoint usado por el panel de administración de RedFID para inscribir un usuario en un curso.
+        """
+        pass
+
+
+class UnenrollUserFromCourse(View):
+    
+    def post(self, request):
+        """
+        Endpoint usado por el panel de administración de RedFID para desinscribir un usuario de un curso.
+        """
+        pass
 
 
