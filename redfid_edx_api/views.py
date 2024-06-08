@@ -127,6 +127,34 @@ class SuspendOrActivateRedfidUser(View):
             return HttpResponseBadRequest("Invalid JSON data")
 
 
+class ChangeRedfidUserPassword(View):
+
+    def post(self, request):
+        """
+        Endpoint usado por el panel de administración de RedFID para cambiar la contraseña de un usuario en la base de datos de Open edX.
+        Se actualiza el campo password del modelo base User.
+        """
+        from django.contrib.auth.models import User
+        try:
+            logger.info("ChangeRedfidUserPassword - request: {}".format(request))
+            data = json.loads(request.body)
+            username = data.get('username')
+            if not username:
+                return HttpResponseBadRequest("Missing username")
+            password = data.get('password')
+            if not password:
+                return HttpResponseBadRequest("Missing password")
+            try:
+                user = User.objects.get(username=username)
+            except User.DoesNotExist:
+                return HttpResponseBadRequest("User not found")
+            user.set_password(password)
+            user.save()
+            return HttpResponse(f"User {username} password updated successfully")
+        except json.JSONDecodeError:
+            return HttpResponseBadRequest("Invalid JSON data")
+
+
 class DeleteRedfidUser(View):
 
     def post(self, request):
