@@ -19,11 +19,9 @@ class CreateRedfidUser(View):
         Endpoint usado por el panel de administración de RedFID para crear un usuario en la base de datos de Open edX.
         Se crea una instancia del modelo base User, y se le asigna un UserProfile y un UserSocialAuth asociado al SSO de RedFID.
         """
-        
         from django.contrib.auth.models import User
         from common.djangoapps.student.models import UserProfile
         from social_django.models import UserSocialAuth
-
         try:
             logger.info("CreateRedfidUser - request: {}".format(request))
             data = json.loads(request.body)
@@ -64,21 +62,27 @@ class EditRedfidUser(View):
         Endpoint usado por el panel de administración de RedFID para editar un usuario en la base de datos de Open edX.
         Se actualizan los campos email, first_name y last_name del modelo base User, y el campo name del model UserProfile.
         """
-
         from django.contrib.auth.models import User
         from common.djangoapps.student.models import UserProfile
-
         try:
+            logger.info("EditRedfidUser - request: {}".format(request))
             data = json.loads(request.body)
             username = data.get('username')
             if not username:
                 return HttpResponseBadRequest("Missing username")
-            user = User.objects.get(username=username)
-            if not user:
+            try:
+                user = User.objects.get(username=username)
+            except User.DoesNotExist:
                 return HttpResponseBadRequest("User not found")
             email = data.get('email')
+            if not email:
+                return HttpResponseBadRequest("Missing email")
             first_name = data.get('first_name')
+            if not first_name:
+                return HttpResponseBadRequest("Missing first_name")
             last_name = data.get('last_name')
+            if not last_name:
+                return HttpResponseBadRequest("Missing last_name")
             user.email = email
             user.first_name = first_name
             user.last_name = last_name
@@ -102,22 +106,21 @@ class SuspendOrActivateRedfidUser(View):
         Endpoint usado por el panel de administración de RedFID para suspender o activar un usuario en la base de datos de Open edX.
         Se actualiza el campo is_active del modelo base User.
         """
-
         from django.contrib.auth.models import User
-
         try:
+            logger.info("SuspendOrActivateRedfidUser - request: {}".format(request))
             data = json.loads(request.body)
             username = data.get('username')
             if not username:
                 return HttpResponseBadRequest("Missing username")
-            user = User.objects.get(username=username)
-            if not user:
-                return HttpResponseBadRequest("User not found")
             is_active = data.get('is_active')
-            if is_active:
-                user.is_active = True
-            else:
-                user.is_active = False
+            if is_active is None:
+                return HttpResponseBadRequest("Missing is_active")
+            try:
+                user = User.objects.get(username=username)
+            except User.DoesNotExist:
+                return HttpResponseBadRequest("User not found")
+            user.is_active = is_active
             user.save()
             return HttpResponse(f"User {username} is_active updated successfully")
         except json.JSONDecodeError:
@@ -129,18 +132,18 @@ class DeleteRedfidUser(View):
     def post(self, request):
         """
         Endpoint usado por el panel de administración de RedFID para eliminar un usuario en la base de datos de Open edX.
-        Se eliminan las instancias del modelo base User, UserProfile y UserSocialAuth asociadas al usuario.
+        Se eliminan las instancias del modelo base User, y todos los modelos relacionados.
         """
-
         from django.contrib.auth.models import User
-
         try:
+            logger.info("DeleteRedfidUser - request: {}".format(request))
             data = json.loads(request.body)
             username = data.get('username')
             if not username:
                 return HttpResponseBadRequest("Missing username")
-            user = User.objects.get(username=username)
-            if not user:
+            try:
+                user = User.objects.get(username=username)
+            except User.DoesNotExist:
                 return HttpResponseBadRequest("User not found")
             user.delete()
             return HttpResponse(f"User {username} deleted successfully")
@@ -337,7 +340,7 @@ class GetXBlockUserData(View):
     
     def post(self, request):
         """
-        Endpoint usado por el panel de administración de RedFID para obtener los certificados de un curso.
+        Endpoint usado por el panel de administración de RedFID para la respuesta de un usuario a un XBlock.
         """
         from django.contrib.auth.models import User
         from lms.djangoapps.courseware.models import StudentModule
