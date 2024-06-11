@@ -385,7 +385,7 @@ class GetXBlockUserData(View):
             return HttpResponseBadRequest("Missing course_id")
         if not xblock_type:
             return HttpResponseBadRequest("Missing xblock_type")
-        if xblock_type not in ['iterativexblock', 'freetextresponse']:
+        if xblock_type not in ['iterativexblock', 'iaaxblock', 'freetextresponse', 'problem']:
             return HttpResponseBadRequest("Invalid xblock_type")
         try:
             user = User.objects.get(username=username)
