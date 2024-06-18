@@ -352,7 +352,25 @@ class GetUserCertificates(View):
         """
         Endpoint usado por el panel de administración de RedFID para obtener los certificados de un usuario.
         """
-        pass
+        from django.contrib.auth.models import User
+        from lms.djangoapps.certificates.models import GeneratedCertificate
+        data = json.loads(request.body)
+        username = data.get('username')
+        if not username:
+            return HttpResponseBadRequest("Missing username")
+        try:
+            user_certificates = GeneratedCertificate.objects.filter(user__username=username).all()
+        except User.DoesNotExist:
+            return HttpResponseBadRequest("User not found")
+        out = []
+        for certificate in user_certificates:
+            out.append({
+                "username": certificate.user.username,
+                "course_id": str(certificate.course_id),
+                "verify_uuid": certificate.verify_uuid,
+                "key": certificate.key
+            })
+        return JsonResponse(out, safe=False)
 
 
 class GetCourseCertificates(View):
@@ -361,7 +379,21 @@ class GetCourseCertificates(View):
         """
         Endpoint usado por el panel de administración de RedFID para obtener los certificados de un curso.
         """
-        pass
+        from lms.djangoapps.certificates.models import GeneratedCertificate
+        data = json.loads(request.body)
+        course_id = data.get('course_id')
+        if not course_id:
+            return HttpResponseBadRequest("Missing course_id")
+        certificates = GeneratedCertificate.objects.filter(course_id=course_id).all()
+        out = []
+        for certificate in certificates:
+            out.append({
+                "username": certificate.user.username,
+                "course_id": str(certificate.course_id),
+                "verify_uuid": certificate.verify_uuid,
+                "key": certificate.key
+            })
+        return JsonResponse(out, safe=False)
     
 
 class GetXBlockUserData(View):
@@ -385,31 +417,49 @@ class GetXBlockUserData(View):
             return HttpResponseBadRequest("Missing course_id")
         if not xblock_type:
             return HttpResponseBadRequest("Missing xblock_type")
-        if xblock_type not in ['iterativexblock', 'iaaxblock', 'freetextresponse', 'problem']:
+        valid_xblock_types = ['iterativexblock', 'iaaxblock', 'freetextresponse', 'problem']
+        if xblock_type not in valid_xblock_types:
             return HttpResponseBadRequest("Invalid xblock_type")
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist:
             return HttpResponseBadRequest("User not found")
-        try:
-            module_state_key = "block-v1:{}+type@{}+block@{}".format(course_id.split("course-v1:")[1], xblock_type, id_xblock)
-            student_module = StudentModule.objects.get(student=user, module_state_key=module_state_key)
-            if xblock_type == 'freetextresponse':
-                out = {
-                    "answer": json.loads(student_module.state)['student_answer']
-                }
-            elif xblock_type == 'iterativexblock':
-                out = {
-                    "answer": json.loads(student_module.state)['student_answers']
-                }
-            else:
+        if type(id_xblock) == list:
+            out = []
+            for block_id in id_xblock:
+                try:
+                    module_state_key = "block-v1:{}+type@{}+block@{}".format(course_id.split("course-v1:")[1], xblock_type, block_id)
+                    student_module = StudentModule.objects.get(student=user, module_state_key=module_state_key)
+                    
+                    if xblock_type == 'freetextresponse':
+                        answer = json.loads(student_module.state)['student_answer'] if 'student_answer' in json.loads(student_module.state).keys() else None
+                    elif xblock_type == 'iterativexblock' or xblock_type == 'problem':
+                        answer = json.loads(student_module.state)['student_answers'] if 'student_answers' in json.loads(student_module.state).keys() else None
+                    else:
+                        answer = None
+                    out.append({"answer": answer})
+                except StudentModule.DoesNotExist:
+                    out.append({"answer": None})
+        else:
+            try:
+                module_state_key = "block-v1:{}+type@{}+block@{}".format(course_id.split("course-v1:")[1], xblock_type, id_xblock)
+                student_module = StudentModule.objects.get(student=user, module_state_key=module_state_key)
+                if xblock_type == 'freetextresponse':
+                    out = {
+                        "answer": json.loads(student_module.state)['student_answer'] if 'student_answer' in json.loads(student_module.state).keys() else None
+                    }
+                elif xblock_type == 'iterativexblock' or xblock_type == 'problem':
+                    out = {
+                        "answer": json.loads(student_module.state)['student_answers'] if 'student_answers' in json.loads(student_module.state).keys() else None
+                    }
+                else:
+                    out = {
+                        "answer": None
+                    }
+            except StudentModule.DoesNotExist:
                 out = {
                     "answer": None
                 }
-        except StudentModule.DoesNotExist:
-            out = {
-                "answer": None
-            }
         return JsonResponse(out, safe=False)
 
 
@@ -419,7 +469,16 @@ class EnrollUserIntoCourse(View):
         """
         Endpoint usado por el panel de administración de RedFID para inscribir un usuario en un curso.
         """
-        pass
+        from django.contrib.auth.models import User
+        data = json.loads(request.body)
+        username = data.get('username')
+        course_id = data.get('course_id')
+        if not username:
+            return HttpResponseBadRequest("Missing username")
+        if not course_id:
+            return HttpResponseBadRequest("Missing course_id")
+        return HttpResponse(f"User {username} enrolled in course {course_id}")
+    
 
 
 class UnenrollUserFromCourse(View):
@@ -428,7 +487,15 @@ class UnenrollUserFromCourse(View):
         """
         Endpoint usado por el panel de administración de RedFID para desinscribir un usuario de un curso.
         """
-        pass
+        from django.contrib.auth.models import User
+        data = json.loads(request.body)
+        username = data.get('username')
+        course_id = data.get('course_id')
+        if not username:
+            return HttpResponseBadRequest("Missing username")
+        if not course_id:
+            return HttpResponseBadRequest("Missing course_id")
+        return HttpResponse(f"User {username} unenrolled from course {course_id}")
 
     
 

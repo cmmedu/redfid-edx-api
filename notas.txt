@@ -1,8 +1,8 @@
 PENDIENTE
 
 [ ] Autenticación de requests
-[ ] Obtener certificados de un usuario
-[ ] Obtener certificados de un curso
+[x] Obtener certificados de un usuario
+[x] Obtener certificados de un curso
 [ ] Emitir certificados para usuarios inscritos de un curso (aprobarlos)
 [ ] Revocar certificados a usuarios aprobados en un curso
 [ ] Inscribir usuario en curso
