@@ -6,6 +6,7 @@ from django.contrib.auth import logout
 from django.db.utils import IntegrityError
 from django.http import HttpResponseRedirect, HttpResponseBadRequest, HttpResponse, JsonResponse
 from django.views.generic.base import View
+from opaque_keys.edx.keys import CourseKey
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 import json
 import logging
@@ -384,7 +385,10 @@ class GetCourseCertificates(View):
         course_id = data.get('course_id')
         if not course_id:
             return HttpResponseBadRequest("Missing course_id")
-        certificates = GeneratedCertificate.objects.filter(course_id=course_id).all()
+        try:
+            certificates = GeneratedCertificate.objects.filter(course_id=course_id).all()
+        except:
+            return HttpResponseBadRequest("Course not found")
         out = []
         for certificate in certificates:
             out.append({
@@ -470,6 +474,7 @@ class EnrollUserIntoCourse(View):
         Endpoint usado por el panel de administración de RedFID para inscribir un usuario en un curso.
         """
         from django.contrib.auth.models import User
+        from lms.djangoapps.instructor.enrollment import enroll_email, get_user_email_language
         data = json.loads(request.body)
         username = data.get('username')
         course_id = data.get('course_id')
@@ -477,9 +482,24 @@ class EnrollUserIntoCourse(View):
             return HttpResponseBadRequest("Missing username")
         if not course_id:
             return HttpResponseBadRequest("Missing course_id")
+        try:
+            course_id = CourseKey.from_string(course_id)
+        except: 
+            return HttpResponseBadRequest("Invalid course_id")
+        try:
+            user = User.objects.get(username=username)
+            email = user.email
+            language = get_user_email_language(user)
+        except:
+            return HttpResponseBadRequest("User not found")
+        try:
+            enroll_email(
+                course_id, email, False, False, {}, language=language
+            )
+        except:
+            return HttpResponseBadRequest("Error enrolling user in course")
         return HttpResponse(f"User {username} enrolled in course {course_id}")
     
-
 
 class UnenrollUserFromCourse(View):
     
@@ -488,6 +508,7 @@ class UnenrollUserFromCourse(View):
         Endpoint usado por el panel de administración de RedFID para desinscribir un usuario de un curso.
         """
         from django.contrib.auth.models import User
+        from lms.djangoapps.instructor.enrollment import unenroll_email, get_user_email_language
         data = json.loads(request.body)
         username = data.get('username')
         course_id = data.get('course_id')
@@ -495,6 +516,22 @@ class UnenrollUserFromCourse(View):
             return HttpResponseBadRequest("Missing username")
         if not course_id:
             return HttpResponseBadRequest("Missing course_id")
+        try:
+            course_id = CourseKey.from_string(course_id)
+        except: 
+            return HttpResponseBadRequest("Invalid course_id")
+        try:
+            user = User.objects.get(username=username)
+            email = user.email
+            language = get_user_email_language(user)
+        except:
+            return HttpResponseBadRequest("User not found")
+        try:
+            unenroll_email(
+                course_id, email, False, {}, language=language
+            )
+        except:
+            return HttpResponseBadRequest("Error enrolling user in course")
         return HttpResponse(f"User {username} unenrolled from course {course_id}")
 
     
