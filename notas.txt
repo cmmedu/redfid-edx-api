@@ -1,13 +1,11 @@
 PENDIENTE
 
-[ ] Autenticación de requests
+[x] Autenticación de requests
 [x] Obtener certificados de un usuario
 [x] Obtener certificados de un curso
 [ ] Emitir certificados para usuarios inscritos de un curso (aprobarlos)
 [ ] Revocar certificados a usuarios aprobados en un curso
-[ ] Inscribir usuario en curso
-[ ] Desinscribir usuario de un curso
+[x] Inscribir usuario en curso
+[x] Desinscribir usuario de un curso
 [ ] Tests
-[ ] XBlocks adicionales en getter (VoF, Clase 3, consentimiento informado, etc.)
-[ ] Mejorar README
 

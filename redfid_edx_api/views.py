@@ -6,14 +6,28 @@ from django.contrib.auth import logout
 from django.db.utils import IntegrityError
 from django.http import HttpResponseRedirect, HttpResponseBadRequest, HttpResponse, JsonResponse
 from django.views.generic.base import View
-from opaque_keys.edx.keys import CourseKey
-from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
+from edx_rest_framework_extensions import permissions
+from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
+from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 import json
 import logging
+from opaque_keys.edx.keys import CourseKey
+from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
+from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
+from rest_framework.views import APIView
+
 
 logger = logging.getLogger(__name__)
 
-class CreateRedfidUser(View):
+class CreateRedfidUser(APIView):
+
+    authentication_classes = (
+        JwtAuthentication,
+        BearerAuthenticationAllowInactiveUser,
+        SessionAuthenticationAllowInactiveUser,
+    )
+
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
 
     def post(self, request):
         """
@@ -56,7 +70,15 @@ class CreateRedfidUser(View):
             return HttpResponseBadRequest("Invalid JSON data")
 
 
-class EditRedfidUser(View):
+class EditRedfidUser(APIView):
+
+    authentication_classes = (
+        JwtAuthentication,
+        BearerAuthenticationAllowInactiveUser,
+        SessionAuthenticationAllowInactiveUser,
+    )
+
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
     
     def post(self, request):
         """
@@ -100,7 +122,15 @@ class EditRedfidUser(View):
 
 
 
-class SuspendOrActivateRedfidUser(View):
+class SuspendOrActivateRedfidUser(APIView):
+
+    authentication_classes = (
+        JwtAuthentication,
+        BearerAuthenticationAllowInactiveUser,
+        SessionAuthenticationAllowInactiveUser,
+    )
+
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
 
     def post(self, request):
         """
@@ -128,7 +158,15 @@ class SuspendOrActivateRedfidUser(View):
             return HttpResponseBadRequest("Invalid JSON data")
 
 
-class ChangeRedfidUserPassword(View):
+class ChangeRedfidUserPassword(APIView):
+
+    authentication_classes = (
+        JwtAuthentication,
+        BearerAuthenticationAllowInactiveUser,
+        SessionAuthenticationAllowInactiveUser,
+    )
+
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
 
     def post(self, request):
         """
@@ -156,7 +194,15 @@ class ChangeRedfidUserPassword(View):
             return HttpResponseBadRequest("Invalid JSON data")
 
 
-class DeleteRedfidUser(View):
+class DeleteRedfidUser(APIView):
+
+    authentication_classes = (
+        JwtAuthentication,
+        BearerAuthenticationAllowInactiveUser,
+        SessionAuthenticationAllowInactiveUser,
+    )
+
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
 
     def post(self, request):
         """
@@ -202,7 +248,15 @@ class RedfidLogoutPost(View):
         return HttpResponseRedirect(redirect_url)
 
 
-class GetIAAUserData(View):
+class GetIAAUserData(APIView):
+
+    authentication_classes = (
+        JwtAuthentication,
+        BearerAuthenticationAllowInactiveUser,
+        SessionAuthenticationAllowInactiveUser,
+    )
+
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
     
     def post(self, request):
         """
@@ -238,7 +292,15 @@ class GetIAAUserData(View):
         return JsonResponse(out, safe=False)
 
 
-class GetIAACourseData(View):
+class GetIAACourseData(APIView):
+
+    authentication_classes = (
+        JwtAuthentication,
+        BearerAuthenticationAllowInactiveUser,
+        SessionAuthenticationAllowInactiveUser,
+    )
+
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
         
     def post(self, request):
         """
@@ -274,7 +336,15 @@ class GetIAACourseData(View):
         return JsonResponse(out, safe=False)
 
 
-class GetIterativeXBlockUserData(View):
+class GetIterativeXBlockUserData(APIView):
+
+    authentication_classes = (
+        JwtAuthentication,
+        BearerAuthenticationAllowInactiveUser,
+        SessionAuthenticationAllowInactiveUser,
+    )
+
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
     
     def post(self, request):
         """
@@ -308,7 +378,15 @@ class GetIterativeXBlockUserData(View):
         return JsonResponse(out, safe=False)
 
 
-class GetIterativeXBlockCourseData(View):
+class GetIterativeXBlockCourseData(APIView):
+
+    authentication_classes = (
+        JwtAuthentication,
+        BearerAuthenticationAllowInactiveUser,
+        SessionAuthenticationAllowInactiveUser,
+    )
+
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
     
     def post(self, request):
         """
@@ -347,7 +425,15 @@ class GetIterativeXBlockCourseData(View):
         return JsonResponse(out, safe=False)
             
 
-class GetUserCertificates(View):
+class GetUserCertificates(APIView):
+
+    authentication_classes = (
+        JwtAuthentication,
+        BearerAuthenticationAllowInactiveUser,
+        SessionAuthenticationAllowInactiveUser,
+    )
+
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
 
     def post(self, request):
         """
@@ -374,7 +460,15 @@ class GetUserCertificates(View):
         return JsonResponse(out, safe=False)
 
 
-class GetCourseCertificates(View):
+class GetCourseCertificates(APIView):
+
+    authentication_classes = (
+        JwtAuthentication,
+        BearerAuthenticationAllowInactiveUser,
+        SessionAuthenticationAllowInactiveUser,
+    )
+
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
 
     def post(self, request):
         """
@@ -400,7 +494,15 @@ class GetCourseCertificates(View):
         return JsonResponse(out, safe=False)
     
 
-class GetXBlockUserData(View):
+class GetXBlockUserData(APIView):
+
+    authentication_classes = (
+        JwtAuthentication,
+        BearerAuthenticationAllowInactiveUser,
+        SessionAuthenticationAllowInactiveUser,
+    )
+
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
     
     def post(self, request):
         """
@@ -467,7 +569,15 @@ class GetXBlockUserData(View):
         return JsonResponse(out, safe=False)
 
 
-class EnrollUserIntoCourse(View):
+class EnrollUserIntoCourse(APIView):
+
+    authentication_classes = (
+        JwtAuthentication,
+        BearerAuthenticationAllowInactiveUser,
+        SessionAuthenticationAllowInactiveUser,
+    )
+
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
 
     def post(self, request):
         """
@@ -501,7 +611,15 @@ class EnrollUserIntoCourse(View):
         return HttpResponse(f"User {username} enrolled in course {course_id}")
     
 
-class UnenrollUserFromCourse(View):
+class UnenrollUserFromCourse(APIView):
+
+    authentication_classes = (
+        JwtAuthentication,
+        BearerAuthenticationAllowInactiveUser,
+        SessionAuthenticationAllowInactiveUser,
+    )
+
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
     
     def post(self, request):
         """
