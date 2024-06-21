@@ -10,11 +10,13 @@ from edx_rest_framework_extensions import permissions
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 import json
+from lms.djangoapps.certificates.queue import XQueueCertInterface
 import logging
 from opaque_keys.edx.keys import CourseKey
 from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
 from rest_framework.views import APIView
+from xmodule.modulestore.django import modulestore
 
 
 logger = logging.getLogger(__name__)
@@ -493,6 +495,82 @@ class GetCourseCertificates(APIView):
             })
         return JsonResponse(out, safe=False)
     
+
+class EmitUserCertificate(APIView):
+    
+    authentication_classes = (
+        JwtAuthentication,
+        BearerAuthenticationAllowInactiveUser,
+        SessionAuthenticationAllowInactiveUser,
+    )
+
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
+
+    def post(self, request):
+        """
+        Endpoint usado por el panel de administración de RedFID para emitir un certificado a un usuario.
+        """
+        from django.contrib.auth.models import User
+        from lms.djangoapps.certificates.models import GeneratedCertificate
+        data = json.loads(request.body)
+        username = data.get('username')
+        course_id = data.get('course_id')
+        if not username:
+            return HttpResponseBadRequest("Missing username")
+        if not course_id:
+            return HttpResponseBadRequest("Missing course_id")
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return HttpResponseBadRequest("User not found")
+        try:
+            course_id = CourseKey.from_string(course_id)
+        except: 
+            return HttpResponseBadRequest("Invalid course_id")
+        course = modulestore().get_course(course_id)
+        xqueue = XQueueCertInterface()
+        xqueue.add_cert(user, course_id, course=course, generate_pdf=False, forced_grade="Aprobado")
+        return HttpResponse(f"Certificate emitted for user {username} in course {course_id}")
+
+
+class RevokeUserCertificate(APIView):
+        
+    authentication_classes = (
+        JwtAuthentication,
+        BearerAuthenticationAllowInactiveUser,
+        SessionAuthenticationAllowInactiveUser,
+    )
+
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
+
+    def post(self, request):
+        """
+        Endpoint usado por el panel de administración de RedFID para revocar un certificado de un usuario.
+        """
+        from django.contrib.auth.models import User
+        from lms.djangoapps.certificates.models import GeneratedCertificate
+        data = json.loads(request.body)
+        username = data.get('username')
+        course_id = data.get('course_id')
+        if not username:
+            return HttpResponseBadRequest("Missing username")
+        if not course_id:
+            return HttpResponseBadRequest("Missing course_id")
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            return HttpResponseBadRequest("User not found")
+        try:
+            course_id = CourseKey.from_string(course_id)
+        except: 
+            return HttpResponseBadRequest("Invalid course_id")
+        try:
+            certificate = GeneratedCertificate.objects.get(user=user, course_id=course_id)
+        except GeneratedCertificate.DoesNotExist:
+            return HttpResponseBadRequest("Certificate not found")
+        certificate.delete()
+        return HttpResponse(f"Certificate revoked for user {username} in course {course_id}")
+
 
 class GetXBlockUserData(APIView):
 
