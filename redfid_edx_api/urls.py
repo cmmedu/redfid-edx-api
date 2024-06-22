@@ -6,6 +6,7 @@ from .views import *
 urlpatterns = [
     url('logout_get/', RedfidLogoutGet.as_view(), name='logout_get'),
     url('logout_post/', csrf_exempt(RedfidLogoutPost.as_view()), name='logout_post'),
+    url('get_users/', GetRedfidUsers.as_view(), name='get_users'),
     url('create_user/', csrf_exempt(CreateRedfidUser.as_view()), name='create_user'),
     url('edit_user/', csrf_exempt(EditRedfidUser.as_view()), name='edit_user'),
     url('suspend_or_activate_user/', csrf_exempt(SuspendOrActivateRedfidUser.as_view()), name='suspend_or_activate_user'),

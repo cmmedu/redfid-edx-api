@@ -21,6 +21,37 @@ from xmodule.modulestore.django import modulestore
 
 logger = logging.getLogger(__name__)
 
+
+class GetRedfidUsers(APIView):
+    
+    authentication_classes = (
+        JwtAuthentication,
+        BearerAuthenticationAllowInactiveUser,
+        SessionAuthenticationAllowInactiveUser,
+    )
+
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
+
+    def get(self, request):
+        """
+        Endpoint usado por el panel de administración de RedFID para obtener la lista de usuarios en la base de datos de Open edX.
+        """
+        from django.contrib.auth.models import User
+        users = User.objects.all()
+        out = []
+        for user in users:
+            out.append({
+                "username": user.username,
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "is_active": user.is_active,
+                "is_staff": user.is_staff,
+                "is_superuser": user.is_superuser
+            })
+        return JsonResponse(out, safe=False)
+
+
 class CreateRedfidUser(APIView):
 
     authentication_classes = (
@@ -47,12 +78,14 @@ class CreateRedfidUser(APIView):
             email = data.get('email')
             first_name = data.get('first_name')
             last_name = data.get('last_name')
-            if not username or not password or not email or not first_name or not last_name:
+            is_staff = data.get('is_staff')
+            is_superuser = data.get('is_superuser')
+            if not username or not password or not email or not first_name or not last_name or is_staff is None or is_superuser is None:
                 return HttpResponseBadRequest("Missing required fields")
             if username in settings.FORBIDDEN_USERNAMES:
                 return HttpResponseBadRequest("Username is forbidden")
             try:
-                new_user = User.objects.create_user(username, email, password, first_name=first_name, last_name=last_name)
+                new_user = User.objects.create_user(username, email, password, first_name=first_name, last_name=last_name, is_staff=is_staff, is_superuser=is_superuser)
                 new_user.save()
             except IntegrityError:
                 return HttpResponseBadRequest("User already exists")
@@ -108,9 +141,17 @@ class EditRedfidUser(APIView):
             last_name = data.get('last_name')
             if not last_name:
                 return HttpResponseBadRequest("Missing last_name")
+            is_staff = data.get('is_staff')
+            if is_staff is None:
+                return HttpResponseBadRequest("Missing is_staff")
+            is_superuser = data.get('is_superuser')
+            if is_superuser is None:
+                return HttpResponseBadRequest("Missing is_superuser")
             user.email = email
             user.first_name = first_name
             user.last_name = last_name
+            user.is_staff = is_staff
+            user.is_superuser = is_superuser
             user.save()
             userprofile = UserProfile.objects.get(user=user)
             if not userprofile:
