@@ -4,14 +4,13 @@ from .views import *
 
 
 urlpatterns = [
-    url('logout_get/', RedfidLogoutGet.as_view(), name='logout_get'),
-    url('logout_post/', csrf_exempt(RedfidLogoutPost.as_view()), name='logout_post'),
     url('get_users/', GetRedfidUsers.as_view(), name='get_users'),
     url('create_user/', csrf_exempt(CreateRedfidUser.as_view()), name='create_user'),
     url('edit_user/', csrf_exempt(EditRedfidUser.as_view()), name='edit_user'),
     url('suspend_or_activate_user/', csrf_exempt(SuspendOrActivateRedfidUser.as_view()), name='suspend_or_activate_user'),
     url('change_user_password/', csrf_exempt(ChangeRedfidUserPassword.as_view()), name='change_user_password'),
     url('delete_user/', csrf_exempt(DeleteRedfidUser.as_view()), name='delete_user'),
+    url('ensure_user_has_redfid_social_auth/', csrf_exempt(EnsureUserHasRedfidSocialAuth.as_view()), name='ensure_user_has_redfid_social_auth'),
     url('get_iaa_user_data/', csrf_exempt(GetIAAUserData.as_view()), name='get_iaa_user_data'),
     url('get_iaa_course_data/', csrf_exempt(GetIAACourseData.as_view()), name='get_iaa_course_data'),
     url('get_iterativexblock_user_data/', csrf_exempt(GetIterativeXBlockUserData.as_view()), name='get_iterativexblock_user_data'),

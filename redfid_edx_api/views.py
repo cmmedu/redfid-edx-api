@@ -2,10 +2,8 @@
 # -- coding: utf-8 --
 
 from django.conf import settings
-from django.contrib.auth import logout
 from django.db.utils import IntegrityError
-from django.http import HttpResponseRedirect, HttpResponseBadRequest, HttpResponse, JsonResponse
-from django.views.generic.base import View
+from django.http import HttpResponseBadRequest, HttpResponse, JsonResponse
 from edx_rest_framework_extensions import permissions
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
@@ -13,7 +11,6 @@ import json
 from lms.djangoapps.certificates.queue import XQueueCertInterface
 import logging
 from opaque_keys.edx.keys import CourseKey
-from openedx.core.djangoapps.site_configuration import helpers as configuration_helpers
 from openedx.core.lib.api.authentication import BearerAuthenticationAllowInactiveUser
 from rest_framework.views import APIView
 from xmodule.modulestore.django import modulestore
@@ -73,6 +70,7 @@ class CreateRedfidUser(APIView):
         try:
             logger.info("CreateRedfidUser - request: {}".format(request))
             data = json.loads(request.body)
+            user_id = data.get('user_id')
             username = data.get('username')
             password = data.get('password')
             email = data.get('email')
@@ -96,7 +94,7 @@ class CreateRedfidUser(APIView):
             except IntegrityError:
                 return HttpResponseBadRequest("UserProfile already exists") # should never happen
             try:
-                new_usersocialauth = UserSocialAuth.objects.create(user=new_user, provider='tpa-saml', uid="default:" + username, extra_data={})
+                new_usersocialauth = UserSocialAuth.objects.create(user=new_user, provider='redfid', uid=user_id, extra_data={})
                 new_usersocialauth.save()
             except IntegrityError:
                 return HttpResponseBadRequest("UserSocialAuth already exists") # should never happen
@@ -267,28 +265,60 @@ class DeleteRedfidUser(APIView):
             return HttpResponse(f"User {username} deleted successfully")
         except json.JSONDecodeError:
             return HttpResponseBadRequest("Invalid JSON data")
-    
-
-class RedfidLogoutGet(View):
-    def get(self, request):
-        logout(request)
-        if not request.user.is_anonymous:
-            logger.info("RedfidLogoutGet - logout user: {}".format(request.user))
-        else:
-            logger.info("RedfidLogoutGet - anonymous user")
-        redirect_url = configuration_helpers.get_value('REDFID_REDIRECT_LOGOUT_URL', settings.REDFID_REDIRECT_LOGOUT_URL)
-        return HttpResponseRedirect(redirect_url)
 
 
-class RedfidLogoutPost(View):
+class EnsureUserHasRedfidSocialAuth(APIView):
+    authentication_classes = (
+        JwtAuthentication,
+        BearerAuthenticationAllowInactiveUser,
+        SessionAuthenticationAllowInactiveUser,
+    )
+
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
+
     def post(self, request):
-        logout(request)
-        if not request.user.is_anonymous:
-            logger.info("RedfidLogoutPost - logout user: {}".format(request.user))
-        else:
-            logger.info("RedfidLogoutPost - anonymous user")
-        redirect_url = configuration_helpers.get_value('REDFID_REDIRECT_POST_URL', settings.REDFID_REDIRECT_POST_URL)
-        return HttpResponseRedirect(redirect_url)
+        """
+        Endpoint usado por el panel de administración de RedFID para asegurar que un usuario tenga un UserSocialAuth asociado al SSO de RedFID.
+        Si el usuario no tiene un UserSocialAuth asociado al SSO de RedFID, se crea uno.
+        Si el usuario tiene un UserSocialAuth no asociado al SSO de RedFID, se elimina.
+        """
+        from django.contrib.auth.models import User
+        from social_django.models import UserSocialAuth
+        try:
+            logger.info("EnsureUserHasRedfidSocialAuth - request: {}".format(request))
+            data = json.loads(request.body)
+            user_id = data.get('user_id')
+            username = data.get('username')
+            if not username:
+                return HttpResponseBadRequest("Missing username")
+            if not user_id:
+                return HttpResponseBadRequest("Missing user_id")
+            try:
+                user = User.objects.get(username=username)
+            except User.DoesNotExist:
+                return HttpResponseBadRequest("User not found")
+
+            saml_usersocialauth = UserSocialAuth.objects.filter(user=user, provider='tpa-saml')
+            existing_saml_usersocialauth = saml_usersocialauth.first()
+            if existing_saml_usersocialauth:
+                existing_saml_usersocialauth.delete()
+                deleted_saml_usersocialauth = True
+            else:
+                deleted_saml_usersocialauth = False
+
+            redfid_usersocialauth = UserSocialAuth.objects.filter(user=user, provider='redfid', uid=user_id)
+            existing_redfid_usersocialauth = redfid_usersocialauth.first()
+            if not existing_redfid_usersocialauth:
+                new_redfid_usersocialauth = UserSocialAuth.objects.create(user=user, provider='redfid', uid=user_id, extra_data={})
+                new_redfid_usersocialauth.save()
+                created_redfid_usersocialauth = True
+            else:
+                created_redfid_usersocialauth = False
+
+            return HttpResponse(f"User {username} RedFID social auth. Created OAuth2: {created_redfid_usersocialauth}, Deleted SAML: {deleted_saml_usersocialauth}")
+
+        except json.JSONDecodeError:
+            return HttpResponseBadRequest("Invalid JSON data")
 
 
 class GetIAAUserData(APIView):
