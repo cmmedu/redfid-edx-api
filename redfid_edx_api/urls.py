@@ -20,6 +20,7 @@ urlpatterns = [
     url('emit_user_certificate/', csrf_exempt(EmitUserCertificate.as_view()), name='emit_user_certificate'),
     url('revoke_user_certificate/', csrf_exempt(RevokeUserCertificate.as_view()), name='revoke_user_certificate'),
     url('get_xblock_user_data/', csrf_exempt(GetXBlockUserData.as_view()), name='get_xblock_user_data'),
+    url('get_xblock_course_data/', csrf_exempt(GetXBlockCourseData.as_view()), name='get_xblock_course_data'),
     url('enroll_user_into_course/', csrf_exempt(EnrollUserIntoCourse.as_view()), name='enroll_user_into_course'),
     url('unenroll_user_from_course/', csrf_exempt(UnenrollUserFromCourse.as_view()), name='unenroll_user_from_course'),
 ]

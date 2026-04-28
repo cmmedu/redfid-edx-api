@@ -718,6 +718,64 @@ class GetXBlockUserData(APIView):
         return JsonResponse(out, safe=False)
 
 
+class GetXBlockCourseData(APIView):
+
+    authentication_classes = (
+        JwtAuthentication,
+        BearerAuthenticationAllowInactiveUser,
+        SessionAuthenticationAllowInactiveUser,
+    )
+
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
+
+    def post(self, request):
+        """
+        Endpoint usado por el panel de administración de RedFID para obtener las respuestas de todos
+        los usuarios a un XBlock de un curso.
+        """
+        from django.contrib.auth.models import User
+        from lms.djangoapps.courseware.models import StudentModule
+        data = json.loads(request.body)
+        id_xblock = data.get('id_xblock')
+        xblock_type = data.get('xblock_type')
+        course_id = data.get('course_id')
+        if not id_xblock:
+            return HttpResponseBadRequest("Missing id_xblock")
+        if not course_id:
+            return HttpResponseBadRequest("Missing course_id")
+        if not xblock_type:
+            return HttpResponseBadRequest("Missing xblock_type")
+        valid_xblock_types = ['iterativexblock', 'iaaxblock', 'freetextresponse', 'problem']
+        if xblock_type not in valid_xblock_types:
+            return HttpResponseBadRequest("Invalid xblock_type")
+
+        course_suffix = course_id.split("course-v1:")[1] if "course-v1:" in course_id else course_id
+
+        block_ids = id_xblock if type(id_xblock) == list else [id_xblock]
+        out = []
+        for block_id in block_ids:
+            module_state_key = "block-v1:{}+type@{}+block@{}".format(course_suffix, xblock_type, block_id)
+            modules = StudentModule.objects.filter(module_state_key=module_state_key).select_related('student')
+            answers = []
+            for module in modules:
+                state = json.loads(module.state)
+                if xblock_type == 'freetextresponse':
+                    answer = state.get('student_answer')
+                elif xblock_type in ('iterativexblock', 'problem'):
+                    answer = state.get('student_answers')
+                else:
+                    answer = None
+                answers.append({
+                    "username": module.student.username,
+                    "answer": answer,
+                })
+            out.append({"id_xblock": block_id, "answers": answers})
+
+        if type(id_xblock) != list:
+            return JsonResponse(out[0], safe=False)
+        return JsonResponse(out, safe=False)
+
+
 class EnrollUserIntoCourse(APIView):
 
     authentication_classes = (
