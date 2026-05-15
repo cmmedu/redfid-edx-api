@@ -348,8 +348,11 @@ class GetIAAUserData(APIView):
             user = User.objects.get(username=username)
         except User.DoesNotExist:
             return HttpResponseBadRequest("User not found")
-        activities = IAAActivity.objects.filter().all()
-        stages = IAAStage.objects.filter().all()
+        course_id = data.get('course_id')
+        if not course_id:
+            return HttpResponseBadRequest("Missing course_id")
+        activities = IAAActivity.objects.filter(id_course=course_id).all()
+        stages = IAAStage.objects.filter(activity__in=activities).all()
         out = []
         for activity in activities:
             out.append({
@@ -436,7 +439,10 @@ class GetIterativeXBlockUserData(APIView):
             user = User.objects.get(username=username)
         except User.DoesNotExist:
             return HttpResponseBadRequest("User not found")
-        questions = IterativeXBlockQuestion.objects.filter().all()
+        course_id = data.get('course_id')
+        if not course_id:
+            return HttpResponseBadRequest("Missing course_id")
+        questions = IterativeXBlockQuestion.objects.filter(id_course=course_id).all()
         out = []
         for question in questions:
             answer = IterativeXBlockAnswer.objects.filter(id_student=user.id, question_id=question.id).first()
