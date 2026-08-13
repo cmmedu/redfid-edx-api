@@ -709,6 +709,9 @@ class GetXBlockUserData(APIView):
         valid_xblock_types = ['iterativexblock', 'iaaxblock', 'freetextresponse', 'problem']
         if xblock_type not in valid_xblock_types:
             return HttpResponseBadRequest("Invalid xblock_type")
+
+        course_suffix = course_id.split("course-v1:")[1] if "course-v1:" in course_id else course_id
+
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist:
@@ -717,7 +720,7 @@ class GetXBlockUserData(APIView):
             out = []
             for block_id in id_xblock:
                 try:
-                    module_state_key = "block-v1:{}+type@{}+block@{}".format(course_id.split("course-v1:")[1], xblock_type, block_id)
+                    module_state_key = "block-v1:{}+type@{}+block@{}".format(course_suffix, xblock_type, block_id)
                     student_module = StudentModule.objects.get(student=user, module_state_key=module_state_key)
                     
                     if xblock_type == 'freetextresponse':
@@ -731,7 +734,7 @@ class GetXBlockUserData(APIView):
                     out.append({"answer": None})
         else:
             try:
-                module_state_key = "block-v1:{}+type@{}+block@{}".format(course_id.split("course-v1:")[1], xblock_type, id_xblock)
+                module_state_key = "block-v1:{}+type@{}+block@{}".format(course_suffix, xblock_type, id_xblock)
                 student_module = StudentModule.objects.get(student=user, module_state_key=module_state_key)
                 if xblock_type == 'freetextresponse':
                     out = {

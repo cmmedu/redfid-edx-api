@@ -14,7 +14,7 @@ from django.urls import reverse
 from lms.djangoapps.certificates.models import GeneratedCertificate
 from lms.djangoapps.courseware.models import StudentModule
 from social_django.models import UserSocialAuth
-from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase
+from xmodule.modulestore.tests.django_utils import ModuleStoreTestCase, TEST_DATA_SPLIT_MODULESTORE
 from xmodule.modulestore.tests.factories import CourseFactory
 
 
@@ -165,6 +165,12 @@ def fake_iterative_module(questions=(), answers=()):
 
 
 class TestRedfidEdxApi(ModuleStoreTestCase):
+    # GetXBlockUserData/GetXBlockCourseData build split-mongo "block-v1:...
+    # +type@...+block@..." locator strings from course_id, which only
+    # parses against split-mongo (course-v1:) course keys. Force split-mongo
+    # here so CourseFactory-created courses match that assumption instead of
+    # the default old-mongo ("org/course/run") store.
+    MODULESTORE = TEST_DATA_SPLIT_MODULESTORE
 
     def setUp(self):
         super(TestRedfidEdxApi, self).setUp()
@@ -203,7 +209,12 @@ class TestRedfidEdxApi(ModuleStoreTestCase):
         )
 
     def _make_student_module(self, student, course_id, xblock_type, block_id, state):
-        course_suffix = str(course_id).split('course-v1:')[1]
+        # Mirror views.py's course_suffix extraction exactly (str(course_id)
+        # doesn't reliably contain "course-v1:" depending on modulestore/
+        # opaque-keys version), so module_state_key always matches what the
+        # view constructs from the same course_id string.
+        course_id_str = str(course_id)
+        course_suffix = course_id_str.split('course-v1:')[1] if 'course-v1:' in course_id_str else course_id_str
         module_state_key = 'block-v1:{}+type@{}+block@{}'.format(course_suffix, xblock_type, block_id)
         return StudentModule.objects.create(
             student=student,
@@ -910,6 +921,23 @@ class TestRedfidEdxApi(ModuleStoreTestCase):
         })
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {'answer': None})
+
+    def test_get_xblock_user_data_course_id_with_explicit_prefix(self):
+        # Regardless of whether str(course_id) naturally includes the
+        # "course-v1:" prefix on this platform, a client-supplied course_id
+        # that *does* include it must still resolve correctly.
+        course_id_str = str(self.course1.id)
+        course_suffix = course_id_str.split('course-v1:')[1] if 'course-v1:' in course_id_str else course_id_str
+        prefixed_course_id = 'course-v1:' + course_suffix
+        self._make_student_module(
+            self.student1, self.course1.id, 'problem', 'p1', {'student_answers': {'a': '1'}},
+        )
+        response = self._post('get_xblock_user_data', {
+            'username': 'student1', 'id_xblock': 'p1', 'course_id': prefixed_course_id,
+            'xblock_type': 'problem',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'answer': {'a': '1'}})
 
     def test_get_xblock_user_data_freetextresponse(self):
         self._make_student_module(
