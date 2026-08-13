@@ -151,8 +151,9 @@ class EditRedfidUser(APIView):
             user.is_staff = is_staff
             user.is_superuser = is_superuser
             user.save()
-            userprofile = UserProfile.objects.get(user=user)
-            if not userprofile:
+            try:
+                userprofile = UserProfile.objects.get(user=user)
+            except UserProfile.DoesNotExist:
                 return HttpResponseBadRequest("UserProfile not found") # should never happen
             full_name = first_name + " " + last_name
             userprofile.name = full_name
@@ -340,7 +341,10 @@ class GetIAAUserData(APIView):
             from iaaxblock.models import IAAActivity, IAAStage, IAASubmission
         except ImportError:
             return HttpResponseBadRequest("IAAXBlock not found")
-        data = json.loads(request.body)
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return HttpResponseBadRequest("Invalid JSON data")
         username = data.get('username')
         if not username:
             return HttpResponseBadRequest("Missing username")
@@ -387,7 +391,10 @@ class GetIAACourseData(APIView):
             from iaaxblock.models import IAAActivity, IAAStage, IAASubmission
         except ImportError:
             return HttpResponseBadRequest("IAAXBlock not found")
-        data = json.loads(request.body)
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return HttpResponseBadRequest("Invalid JSON data")
         course_id = data.get('course_id')
         if not course_id:
             return HttpResponseBadRequest("Missing course_id")
@@ -431,7 +438,10 @@ class GetIterativeXBlockUserData(APIView):
             from iterativexblock.models import IterativeXBlockQuestion, IterativeXBlockAnswer
         except ImportError:
             return HttpResponseBadRequest("IterativeXBlock not found")
-        data = json.loads(request.body)
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return HttpResponseBadRequest("Invalid JSON data")
         username = data.get('username')
         if not username:
             return HttpResponseBadRequest("Missing username")
@@ -476,7 +486,10 @@ class GetIterativeXBlockCourseData(APIView):
             from iterativexblock.models import IterativeXBlockQuestion, IterativeXBlockAnswer
         except ImportError:
             return HttpResponseBadRequest("IterativeXBlock not found")
-        data = json.loads(request.body)
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return HttpResponseBadRequest("Invalid JSON data")
         course_id = data.get('course_id')
         if not course_id:
             return HttpResponseBadRequest("Missing course_id")
@@ -520,7 +533,10 @@ class GetUserCertificates(APIView):
         """
         from django.contrib.auth.models import User
         from lms.djangoapps.certificates.models import GeneratedCertificate
-        data = json.loads(request.body)
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return HttpResponseBadRequest("Invalid JSON data")
         username = data.get('username')
         if not username:
             return HttpResponseBadRequest("Missing username")
@@ -554,7 +570,10 @@ class GetCourseCertificates(APIView):
         Endpoint usado por el panel de administración de RedFID para obtener los certificados de un curso.
         """
         from lms.djangoapps.certificates.models import GeneratedCertificate
-        data = json.loads(request.body)
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return HttpResponseBadRequest("Invalid JSON data")
         course_id = data.get('course_id')
         if not course_id:
             return HttpResponseBadRequest("Missing course_id")
@@ -589,7 +608,10 @@ class EmitUserCertificate(APIView):
         """
         from django.contrib.auth.models import User
         from lms.djangoapps.certificates.models import GeneratedCertificate
-        data = json.loads(request.body)
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return HttpResponseBadRequest("Invalid JSON data")
         username = data.get('username')
         course_id = data.get('course_id')
         if not username:
@@ -626,7 +648,10 @@ class RevokeUserCertificate(APIView):
         """
         from django.contrib.auth.models import User
         from lms.djangoapps.certificates.models import GeneratedCertificate
-        data = json.loads(request.body)
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return HttpResponseBadRequest("Invalid JSON data")
         username = data.get('username')
         course_id = data.get('course_id')
         if not username:
@@ -665,7 +690,10 @@ class GetXBlockUserData(APIView):
         """
         from django.contrib.auth.models import User
         from lms.djangoapps.courseware.models import StudentModule
-        data = json.loads(request.body)
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return HttpResponseBadRequest("Invalid JSON data")
         username = data.get('username')
         id_xblock = data.get('id_xblock')
         xblock_type = data.get('xblock_type')
@@ -681,6 +709,9 @@ class GetXBlockUserData(APIView):
         valid_xblock_types = ['iterativexblock', 'iaaxblock', 'freetextresponse', 'problem']
         if xblock_type not in valid_xblock_types:
             return HttpResponseBadRequest("Invalid xblock_type")
+
+        course_suffix = course_id.split("course-v1:")[1] if "course-v1:" in course_id else course_id
+
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist:
@@ -689,7 +720,7 @@ class GetXBlockUserData(APIView):
             out = []
             for block_id in id_xblock:
                 try:
-                    module_state_key = "block-v1:{}+type@{}+block@{}".format(course_id.split("course-v1:")[1], xblock_type, block_id)
+                    module_state_key = "block-v1:{}+type@{}+block@{}".format(course_suffix, xblock_type, block_id)
                     student_module = StudentModule.objects.get(student=user, module_state_key=module_state_key)
                     
                     if xblock_type == 'freetextresponse':
@@ -703,7 +734,7 @@ class GetXBlockUserData(APIView):
                     out.append({"answer": None})
         else:
             try:
-                module_state_key = "block-v1:{}+type@{}+block@{}".format(course_id.split("course-v1:")[1], xblock_type, id_xblock)
+                module_state_key = "block-v1:{}+type@{}+block@{}".format(course_suffix, xblock_type, id_xblock)
                 student_module = StudentModule.objects.get(student=user, module_state_key=module_state_key)
                 if xblock_type == 'freetextresponse':
                     out = {
@@ -741,7 +772,10 @@ class GetXBlockCourseData(APIView):
         """
         from django.contrib.auth.models import User
         from lms.djangoapps.courseware.models import StudentModule
-        data = json.loads(request.body)
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return HttpResponseBadRequest("Invalid JSON data")
         id_xblock = data.get('id_xblock')
         xblock_type = data.get('xblock_type')
         course_id = data.get('course_id')
@@ -798,7 +832,10 @@ class EnrollUserIntoCourse(APIView):
         """
         from django.contrib.auth.models import User
         from lms.djangoapps.instructor.enrollment import enroll_email, get_user_email_language
-        data = json.loads(request.body)
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return HttpResponseBadRequest("Invalid JSON data")
         username = data.get('username')
         course_id = data.get('course_id')
         if not username:
@@ -840,7 +877,10 @@ class UnenrollUserFromCourse(APIView):
         """
         from django.contrib.auth.models import User
         from lms.djangoapps.instructor.enrollment import unenroll_email, get_user_email_language
-        data = json.loads(request.body)
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return HttpResponseBadRequest("Invalid JSON data")
         username = data.get('username')
         course_id = data.get('course_id')
         if not username:
@@ -862,7 +902,7 @@ class UnenrollUserFromCourse(APIView):
                 course_id, email, False, {}, language=language
             )
         except:
-            return HttpResponseBadRequest("Error enrolling user in course")
+            return HttpResponseBadRequest("Error unenrolling user from course")
         return HttpResponse(f"User {username} unenrolled from course {course_id}")
 
     
