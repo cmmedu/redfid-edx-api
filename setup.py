@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="redfid_edx_api",
-    version="0.0.1",
+    version="1.1.2",
     author="Vicente Daie Pinilla",
     author_email="vdaiep@gmail.com",
     description=".",

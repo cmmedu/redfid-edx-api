@@ -248,6 +248,38 @@ class TestRedfidEdxApi(ModuleStoreTestCase):
             )
             self.assertEqual(response.status_code, 401, 'endpoint %s did not require auth' % name)
 
+    def test_endpoints_require_staff(self):
+        """A logged-in non-staff user must get 403 on every endpoint, even when
+        passing their own username in the query string (IsUserInUrl bypass)."""
+        UserFactory(username='learner', password='12345', email='learner@edx.org', is_staff=False)
+        learner_client = Client()
+        learner_client.login(username='learner', password='12345')
+
+        response = learner_client.get(reverse('redfid_edx_api:get_users') + '?username=learner')
+        self.assertEqual(response.status_code, 403)
+
+        post_endpoints = [
+            'create_user', 'edit_user', 'suspend_or_activate_user',
+            'change_user_password', 'delete_user', 'ensure_user_has_redfid_social_auth',
+            'get_iaa_user_data', 'get_iaa_course_data',
+            'get_iterativexblock_user_data', 'get_iterativexblock_course_data',
+            'get_user_certificates', 'get_course_certificates',
+            'emit_user_certificate', 'revoke_user_certificate',
+            'get_xblock_user_data', 'get_xblock_course_data',
+            'enroll_user_into_course', 'unenroll_user_from_course',
+        ]
+        payload = json.dumps({
+            'username': 'learner', 'password': 'x', 'email': 'learner@edx.org',
+            'first_name': 'a', 'last_name': 'b', 'is_staff': True, 'is_superuser': True,
+        })
+        for name in post_endpoints:
+            response = learner_client.post(
+                reverse('redfid_edx_api:%s' % name) + '?username=learner',
+                content_type='application/json', data=payload,
+            )
+            self.assertEqual(response.status_code, 403, 'endpoint %s allowed a non-staff user' % name)
+        self.assertFalse(User.objects.get(username='learner').is_superuser)
+
     # ------------------------------------------------------------------
     # GetRedfidUsers
     # ------------------------------------------------------------------

@@ -5,6 +5,7 @@ from django.conf import settings
 from django.db.utils import IntegrityError
 from django.http import HttpResponseBadRequest, HttpResponse, JsonResponse
 from edx_rest_framework_extensions import permissions
+from rest_framework.permissions import IsAdminUser
 from edx_rest_framework_extensions.auth.jwt.authentication import JwtAuthentication
 from edx_rest_framework_extensions.auth.session.authentication import SessionAuthenticationAllowInactiveUser
 import json
@@ -27,7 +28,7 @@ class GetRedfidUsers(APIView):
         SessionAuthenticationAllowInactiveUser,
     )
 
-    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS, IsAdminUser)
 
     def get(self, request):
         """
@@ -57,7 +58,7 @@ class CreateRedfidUser(APIView):
         SessionAuthenticationAllowInactiveUser,
     )
 
-    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS, IsAdminUser)
 
     def post(self, request):
         """
@@ -111,7 +112,7 @@ class EditRedfidUser(APIView):
         SessionAuthenticationAllowInactiveUser,
     )
 
-    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS, IsAdminUser)
     
     def post(self, request):
         """
@@ -172,7 +173,7 @@ class SuspendOrActivateRedfidUser(APIView):
         SessionAuthenticationAllowInactiveUser,
     )
 
-    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS, IsAdminUser)
 
     def post(self, request):
         """
@@ -208,7 +209,7 @@ class ChangeRedfidUserPassword(APIView):
         SessionAuthenticationAllowInactiveUser,
     )
 
-    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS, IsAdminUser)
 
     def post(self, request):
         """
@@ -244,7 +245,7 @@ class DeleteRedfidUser(APIView):
         SessionAuthenticationAllowInactiveUser,
     )
 
-    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS, IsAdminUser)
 
     def post(self, request):
         """
@@ -275,7 +276,7 @@ class EnsureUserHasRedfidSocialAuth(APIView):
         SessionAuthenticationAllowInactiveUser,
     )
 
-    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS, IsAdminUser)
 
     def post(self, request):
         """
@@ -330,7 +331,7 @@ class GetIAAUserData(APIView):
         SessionAuthenticationAllowInactiveUser,
     )
 
-    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS, IsAdminUser)
     
     def post(self, request):
         """
@@ -380,7 +381,7 @@ class GetIAACourseData(APIView):
         SessionAuthenticationAllowInactiveUser,
     )
 
-    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS, IsAdminUser)
         
     def post(self, request):
         """
@@ -427,7 +428,7 @@ class GetIterativeXBlockUserData(APIView):
         SessionAuthenticationAllowInactiveUser,
     )
 
-    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS, IsAdminUser)
     
     def post(self, request):
         """
@@ -475,7 +476,7 @@ class GetIterativeXBlockCourseData(APIView):
         SessionAuthenticationAllowInactiveUser,
     )
 
-    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS, IsAdminUser)
     
     def post(self, request):
         """
@@ -525,7 +526,7 @@ class GetUserCertificates(APIView):
         SessionAuthenticationAllowInactiveUser,
     )
 
-    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS, IsAdminUser)
 
     def post(self, request):
         """
@@ -563,7 +564,7 @@ class GetCourseCertificates(APIView):
         SessionAuthenticationAllowInactiveUser,
     )
 
-    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS, IsAdminUser)
 
     def post(self, request):
         """
@@ -600,7 +601,7 @@ class EmitUserCertificate(APIView):
         SessionAuthenticationAllowInactiveUser,
     )
 
-    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS, IsAdminUser)
 
     def post(self, request):
         """
@@ -640,7 +641,7 @@ class RevokeUserCertificate(APIView):
         SessionAuthenticationAllowInactiveUser,
     )
 
-    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS, IsAdminUser)
 
     def post(self, request):
         """
@@ -682,7 +683,7 @@ class GetXBlockUserData(APIView):
         SessionAuthenticationAllowInactiveUser,
     )
 
-    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS, IsAdminUser)
     
     def post(self, request):
         """
@@ -763,7 +764,7 @@ class GetXBlockCourseData(APIView):
         SessionAuthenticationAllowInactiveUser,
     )
 
-    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS, IsAdminUser)
 
     def post(self, request):
         """
@@ -824,7 +825,7 @@ class EnrollUserIntoCourse(APIView):
         SessionAuthenticationAllowInactiveUser,
     )
 
-    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS, IsAdminUser)
 
     def post(self, request):
         """
@@ -869,7 +870,7 @@ class UnenrollUserFromCourse(APIView):
         SessionAuthenticationAllowInactiveUser,
     )
 
-    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS,)
+    permission_classes = (permissions.JWT_RESTRICTED_APPLICATION_OR_USER_ACCESS, IsAdminUser)
     
     def post(self, request):
         """
